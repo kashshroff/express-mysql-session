@@ -77,7 +77,8 @@ module.exports = function(session) {
 			columnNames: {
 				session_id: 'session_id',
 				expires: 'expires',
-				data: 'data'
+				data: 'data',
+				user_id: 'user_id'
 			}
 		}
 	};
@@ -127,6 +128,7 @@ module.exports = function(session) {
 				this.options.schema.columnNames.session_id,
 				this.options.schema.columnNames.expires,
 				this.options.schema.columnNames.data,
+				this.options.schema.columnNames.user_id,
 				this.options.schema.columnNames.session_id
 			];
 
@@ -149,10 +151,11 @@ module.exports = function(session) {
 		debug.log('Getting session:', session_id);
 
 		// LIMIT not needed here because the WHERE clause is searching by the table's primary key.
-		var sql = 'SELECT ?? AS data, ?? as expires FROM ?? WHERE ?? = ?';
+		var sql = 'SELECT ?? AS data, ?? as user_id, ?? as expires FROM ?? WHERE ?? = ?';
 
 		var params = [
 			this.options.schema.columnNames.data,
+			this.options.schema.columnNames.user_id,
 			this.options.schema.columnNames.expires,
 			this.options.schema.tableName,
 			this.options.schema.columnNames.session_id,
@@ -219,22 +222,28 @@ module.exports = function(session) {
 		// Use whole seconds here; not milliseconds.
 		expires = Math.round(expires.getTime() / 1000);
 
+		var user_id = data.user_id || null;
+
 		data = JSON.stringify(data);
 
-		var sql = 'INSERT INTO ?? (??, ??, ??) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ?? = VALUES(??), ?? = VALUES(??)';
+		var sql = 'INSERT INTO ?? (??, ??, ??, ??) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE ?? = VALUES(??), ?? = VALUES(??), ?? = VALUES(??)';
 
 		var params = [
 			this.options.schema.tableName,
 			this.options.schema.columnNames.session_id,
 			this.options.schema.columnNames.expires,
 			this.options.schema.columnNames.data,
+			this.options.schema.columnNames.user_id,
 			session_id,
 			expires,
 			data,
+			user_id,
 			this.options.schema.columnNames.expires,
 			this.options.schema.columnNames.expires,
 			this.options.schema.columnNames.data,
-			this.options.schema.columnNames.data
+			this.options.schema.columnNames.data,
+			this.options.schema.columnNames.user_id,
+			this.options.schema.columnNames.user_id
 		];
 
 		this.query(sql, params, function(error) {
